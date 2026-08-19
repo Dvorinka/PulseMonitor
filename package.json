@@ -1,12 +1,12 @@
 {
-  "name": "agent-monitor",
+  "name": "pulsemonitor",
   "private": false,
   "version": "1.0.0",
   "description": "Real-time web dashboard for monitoring remote AI agent sessions over SSH.",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "agent-monitor": "./server.cjs"
+    "PulseMonitor": "./server.cjs"
   },
   "scripts": {
     "dev:api": "AGENT_MONITOR_API_PORT=5657 node server.cjs",
@@ -30,11 +30,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Dvorinka/agent-monitor.git"
+    "url": "https://github.com/Dvorinka/PulseMonitor.git"
   },
-  "homepage": "https://github.com/Dvorinka/agent-monitor",
+  "homepage": "https://github.com/Dvorinka/PulseMonitor",
   "bugs": {
-    "url": "https://github.com/Dvorinka/agent-monitor/issues"
+    "url": "https://github.com/Dvorinka/PulseMonitor/issues"
   },
   "dependencies": {
     "concurrently": "^10.0.3",

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Agent Monitor - Install script for Linux and macOS
+# PulseMonitor - Install script for Linux and macOS
 #
 # Installs the monitor locally, deploys helper scripts to the remote
 # machine, and optionally sets up a systemd/launchd service.
@@ -58,7 +58,7 @@ if [[ -z "$SSH_HOST" ]]; then
 fi
 
 echo ""
-echo "=== Agent Monitor Install ==="
+echo "=== PulseMonitor Install ==="
 echo "  SSH host: $SSH_HOST"
 echo "  SSH key:  $SSH_KEY"
 echo "  Port:     $PORT"
@@ -84,22 +84,22 @@ SSH_CMD="ssh -i $SSH_KEY -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-ne
 $SSH_CMD "mkdir -p /tmp" 2>/dev/null
 scp -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new \
   "$SCRIPT_DIR/remote-todos.py" \
-  "$SSH_HOST:/tmp/agent-monitor-todos.py" 2>/dev/null
+  "$SSH_HOST:/tmp/pulsemonitor-todos.py" 2>/dev/null
 scp -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new \
   "$SCRIPT_DIR/remote-details.py" \
-  "$SSH_HOST:/tmp/agent-monitor-details.py" 2>/dev/null
+  "$SSH_HOST:/tmp/pulsemonitor-details.py" 2>/dev/null
 
-echo "  Helper scripts deployed to /tmp/agent-monitor-*.py on remote"
+echo "  Helper scripts deployed to /tmp/pulsemonitor-*.py on remote"
 
 # 4. Set up service (optional)
 if [[ "$NO_SERVICE" == "false" ]]; then
   echo "[4/4] Setting up service..."
   if command -v systemctl &>/dev/null && [[ -d ~/.config/systemd/user ]]; then
     # Linux systemd user service
-    UNIT_FILE="$HOME/.config/systemd/user/agent-monitor.service"
+    UNIT_FILE="$HOME/.config/systemd/user/pulsemonitor.service"
     cat > "$UNIT_FILE" << EOF
 [Unit]
-Description=Agent Monitor - Remote agent session dashboard
+Description=PulseMonitor - Remote agent session dashboard
 After=network.target
 
 [Service]
@@ -116,20 +116,20 @@ RestartSec=5
 WantedBy=default.target
 EOF
     systemctl --user daemon-reload
-    systemctl --user enable agent-monitor.service
-    systemctl --user start agent-monitor.service
-    echo "  systemd service installed and started: agent-monitor.service"
+    systemctl --user enable pulsemonitor.service
+    systemctl --user start pulsemonitor.service
+    echo "  systemd service installed and started: pulsemonitor.service"
     echo "  Dashboard: http://localhost:$PORT"
-    echo "  Manage: systemctl --user {status|stop|restart} agent-monitor"
+    echo "  Manage: systemctl --user {status|stop|restart} pulsemonitor"
   elif [[ "$(uname)" == "Darwin" ]] && command -v launchctl &>/dev/null; then
     # macOS launchd
-    PLIST_FILE="$HOME/Library/LaunchAgents/com.agent-monitor.plist"
+    PLIST_FILE="$HOME/Library/LaunchAgents/com.pulsemonitor.plist"
     cat > "$PLIST_FILE" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>Label</key><string>com.agent-monitor</string>
+  <key>Label</key><string>com.pulsemonitor</string>
   <key>ProgramArguments</key>
   <array>
     <string>$(which node)</string>
@@ -148,7 +148,7 @@ EOF
 </plist>
 EOF
     launchctl load "$PLIST_FILE" 2>/dev/null || true
-    echo "  launchd service installed: com.agent-monitor"
+    echo "  launchd service installed: com.pulsemonitor"
     echo "  Dashboard: http://localhost:$PORT"
   else
     echo "  No service manager detected. Run manually:"

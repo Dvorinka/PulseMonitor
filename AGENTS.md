@@ -1,10 +1,10 @@
-# Agent Monitor
+# PulseMonitor
 
 Real-time web dashboard for monitoring remote AI agent sessions over SSH.
 
 ## What This Is
 
-Agent Monitor connects to a remote machine via SSH, reads the logs and session database of an AI agent CLI running there, and presents a live dashboard. Currently supports Devin CLI. Designed to be extensible to other harnesses.
+PulseMonitor connects to a remote machine via SSH, reads the logs and session database of an AI agent CLI running there, and presents a live dashboard. Currently supports Devin CLI. Designed to be extensible to other harnesses.
 
 ## Build / Test
 

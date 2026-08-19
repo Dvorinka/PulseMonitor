@@ -1,4 +1,4 @@
-# Agent Monitor - Install script for Windows (PowerShell)
+# PulseMonitor - Install script for Windows (PowerShell)
 #
 # Deploys helper scripts to the remote machine and starts the monitor.
 # Requires Node.js 18+ and SSH (OpenSSH client built into Windows 10+).
@@ -35,7 +35,7 @@ if ([string]::IsNullOrWhiteSpace($SshHost)) {
 }
 
 Write-Host ""
-Write-Host "=== Agent Monitor Install ==="
+Write-Host "=== PulseMonitor Install ==="
 Write-Host "  SSH host: $SshHost"
 Write-Host "  SSH key:  $SshKey"
 Write-Host "  Port:     $Port"
@@ -55,16 +55,16 @@ Pop-Location
 Write-Host "[3/3] Deploying helper scripts to remote..."
 $SshOpts = "-i", $SshKey, "-o", "ConnectTimeout=10", "-o", "StrictHostKeyChecking=accept-new"
 
-scp @SshOpts "$ScriptDir\remote-todos.py" "${SshHost}:/tmp/agent-monitor-todos.py" 2>$null
-scp @SshOpts "$ScriptDir\remote-details.py" "${SshHost}:/tmp/agent-monitor-details.py" 2>$null
+scp @SshOpts "$ScriptDir\remote-todos.py" "${SshHost}:/tmp/pulsemonitor-todos.py" 2>$null
+scp @SshOpts "$ScriptDir\remote-details.py" "${SshHost}:/tmp/pulsemonitor-details.py" 2>$null
 
-Write-Host "  Helper scripts deployed to /tmp/agent-monitor-*.py on remote"
+Write-Host "  Helper scripts deployed to /tmp/pulsemonitor-*.py on remote"
 
 # Set environment and start
 Write-Host ""
 Write-Host "=== Install complete ==="
 Write-Host ""
-Write-Host "Starting Agent Monitor..."
+Write-Host "Starting PulseMonitor..."
 Write-Host "Dashboard: http://localhost:$Port"
 Write-Host ""
 Write-Host "To run manually:"

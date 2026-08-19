@@ -1,6 +1,6 @@
 {
   "name": "default",
-  "displayName": "Agent Monitor",
+  "displayName": "PulseMonitor",
   "accent": "#06b6d4",
   "accentLight": "#22d3ee",
   "accentDim": "#0891b2",
@@ -8,5 +8,5 @@
   "accentBorder": "rgba(6, 182, 212, 0.25)",
   "shadowGlow": "0 0 24px rgba(6, 182, 212, 0.12)",
   "logo": "radar",
-  "logoTitle": "AGENT MONITOR"
+  "logoTitle": "PULSEMONITOR"
 }

@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a bug in Agent Monitor
+about: Report a bug in PulseMonitor
 title: "[bug] "
 labels: bug
 ---
@@ -23,7 +23,7 @@ If applicable, add screenshots.
 **Environment:**
 - OS: [e.g. Ubuntu 24.04, macOS 15, Windows 11]
 - Node version: [e.g. 24.19.0]
-- Agent Monitor version: [e.g. 1.0.0]
+- PulseMonitor version: [e.g. 1.0.0]
 - Harness: [e.g. devin]
 - Browser: [e.g. Firefox 130]
 

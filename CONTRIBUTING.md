@@ -1,12 +1,12 @@
-# Contributing to Agent Monitor
+# Contributing to PulseMonitor
 
 Thank you for your interest in contributing.
 
 ## Development Setup
 
 ```bash
-git clone https://github.com/Dvorinka/agent-monitor.git
-cd agent-monitor
+git clone https://github.com/Dvorinka/pulsemonitor.git
+cd pulsemonitor
 npm install
 npm run dev
 ```

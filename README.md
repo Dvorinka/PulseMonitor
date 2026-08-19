@@ -1,8 +1,8 @@
-# Agent Monitor
+# PulseMonitor
 
 Real-time web dashboard for monitoring remote AI agent sessions over SSH.
 
-Agent Monitor connects to a remote machine where your AI coding agent runs, reads its logs and session database, and presents a live dashboard with activity feed, todo tracking, tool call statistics, agent reasoning, and system metrics.
+PulseMonitor connects to a remote machine where your AI coding agent runs, reads its logs and session database, and presents a live dashboard with activity feed, todo tracking, tool call statistics, agent reasoning, and system metrics.
 
 ## Screenshots
 
@@ -47,8 +47,8 @@ To add a harness, see [docs/harness-development.md](docs/harness-development.md)
 **Linux / macOS:**
 
 ```bash
-git clone https://github.com/Dvorinka/agent-monitor.git
-cd agent-monitor
+git clone https://github.com/Dvorinka/pulsemonitor.git
+cd pulsemonitor
 chmod +x scripts/install.sh
 ./scripts/install.sh
 ```
@@ -56,8 +56,8 @@ chmod +x scripts/install.sh
 **Windows (PowerShell):**
 
 ```powershell
-git clone https://github.com/Dvorinka/agent-monitor.git
-cd agent-monitor
+git clone https://github.com/Dvorinka/pulsemonitor.git
+cd pulsemonitor
 .\scripts\install.ps1
 ```
 
@@ -102,7 +102,7 @@ All configuration is via environment variables. Copy `.env.example` to `.env` an
 
 ## Themes
 
-Agent Monitor supports theme presets for customization. Themes control the accent color, logo, and display name.
+PulseMonitor supports theme presets for customization. Themes control the accent color, logo, and display name.
 
 ### Built-in Themes
 
@@ -139,7 +139,7 @@ The `logo` field accepts `"radar"` (default) or `"proxmox"`. To add a custom log
 For easy integration with your agent dispatch workflow, source the hook script:
 
 ```bash
-source /path/to/agent-monitor/scripts/hook.sh
+source /path/to/pulsemonitor/scripts/hook.sh
 
 # Start the monitor before dispatching an agent task
 agent_monitor_start "root@server" "~/.ssh/my-key" "/root/my-repo"

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Agent Monitor - Details extractor.
+"""PulseMonitor - Details extractor.
 
 Deployed to the remote machine by the install script. Reads the agent
 session database and /proc to extract:
@@ -57,8 +57,46 @@ for r in cur.fetchall():
         tools[name] = tools.get(name, 0) + 1
 
 # Recent assistant messages (commentary)
+# Filter out: commit messages, status updates, markdown headers, very long messages
+# These are "thinking out loud" messages, not final summaries or commit text.
+import re as _re
+
+def is_reasoning(text):
+    """Check if a message is agent reasoning, not a summary or status update."""
+    if not text or len(text) < 10:
+        return False
+    # Skip commit messages and PR-related text
+    if text.startswith("Committed") or text.startswith("Pushed") or text.startswith("Created PR"):
+        return False
+    # Skip messages about lock files, pnpm, etc (commit-related reasoning)
+    if "pnpm-lock" in text or "lock file" in text.lower() or "deprecated annotations" in text:
+        return False
+    # Skip messages that are mostly markdown headers/structure (summaries)
+    if text.startswith("## ") or text.startswith("# Summary"):
+        return False
+    # Skip messages with high markdown density (lists, bold, headers)
+    md_markers = text.count("**") + text.count("##") + text.count("- ")
+    if md_markers > 5 and len(text) > 200:
+        return False
+    # Skip very long messages (likely summaries, not quick reasoning)
+    if len(text) > 400:
+        return False
+    # Skip messages that look like status reports
+    status_words = ["Typecheck passed", "Lint passed", "Build passed", "Tests passed"]
+    if any(text.startswith(w) for w in status_words):
+        return False
+    return True
+
+def clean_text(text):
+    """Light cleanup: strip excessive whitespace, keep it readable."""
+    # Collapse multiple newlines
+    text = _re.sub(r'\n{3,}', '\n\n', text)
+    # Strip leading/trailing whitespace
+    text = text.strip()
+    return text
+
 cur.execute(
-    "SELECT node_id, chat_message FROM message_nodes WHERE session_id=? AND chat_message LIKE ? ORDER BY node_id DESC LIMIT 20",
+    "SELECT node_id, chat_message FROM message_nodes WHERE session_id=? AND chat_message LIKE ? ORDER BY node_id DESC LIMIT 30",
     (sess, "%assistant%"),
 )
 commentary = []
@@ -66,10 +104,11 @@ seen = set()
 for r in cur.fetchall():
     msg = json.loads(r["chat_message"])
     content = msg.get("content", "")
-    if content and len(content) > 5 and content not in seen:
+    if content and content not in seen and is_reasoning(content):
         seen.add(content)
-        commentary.append({"nodeId": r["node_id"], "text": content[:500]})
-        if len(commentary) >= 5:
+        cleaned = clean_text(content[:300])
+        commentary.append({"nodeId": r["node_id"], "text": cleaned})
+        if len(commentary) >= 4:
             break
 
 # Recent tool results

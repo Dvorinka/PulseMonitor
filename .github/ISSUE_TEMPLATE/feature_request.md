@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest a feature for Agent Monitor
+about: Suggest a feature for PulseMonitor
 title: "[feature] "
 labels: enhancement
 ---

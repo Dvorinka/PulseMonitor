@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Agent Monitor - Screenshot utility
+# PulseMonitor - Screenshot utility
 #
 # Captures screenshots of the dashboard for the README.
 # Requires a running monitor and a browser.

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-// agent-monitor: read-only web dashboard for remote AI agent sessions.
+// pulsemonitor: read-only web dashboard for remote AI agent sessions.
 // Connects to a remote machine via SSH, reads agent CLI logs and session
 // databases, and presents a real-time dashboard.
 //
@@ -51,10 +51,10 @@ function loadTheme(name) {
       try {
         return JSON.parse(fs.readFileSync(path.join(THEMES_DIR, 'default.json'), 'utf8'));
       } catch {
-        return { name: 'default', displayName: 'Agent Monitor', accent: '#06b6d4', logo: 'radar', logoTitle: 'AGENT MONITOR' };
+        return { name: 'default', displayName: 'PulseMonitor', accent: '#06b6d4', logo: 'radar', logoTitle: 'AGENT MONITOR' };
       }
     }
-    return { name: 'default', displayName: 'Agent Monitor', accent: '#06b6d4', logo: 'radar', logoTitle: 'AGENT MONITOR' };
+    return { name: 'default', displayName: 'PulseMonitor', accent: '#06b6d4', logo: 'radar', logoTitle: 'AGENT MONITOR' };
   }
 }
 
@@ -71,8 +71,8 @@ const HARNESS_DEVIN = {
   processPattern: 'devin --model',
   logDir: '~/.local/share/devin/cli/logs',
   sessionDbPath: '~/.local/share/devin/cli/sessions.db',
-  todoScript: '/tmp/agent-monitor-todos.py',
-  detailsScript: '/tmp/agent-monitor-details.py',
+  todoScript: '/tmp/pulsemonitor-todos.py',
+  detailsScript: '/tmp/pulsemonitor-details.py',
   // Log line patterns for tool call detection
   toolPatterns: [
     { regex: /Reading file: (.+)/, type: 'read', icon: 'read', label: 'Read' },
@@ -133,7 +133,7 @@ const LOG_DIR = HARNESS.logDir;
 // connection; subsequent calls reuse it, avoiding repeated key exchange.
 // The control socket is created in /tmp and auto-expires after 30s of idle.
 
-const SSH_CONTROL_PATH = `/tmp/agent-monitor-ssh-${process.pid}`;
+const SSH_CONTROL_PATH = `/tmp/pulsemonitor-ssh-${process.pid}`;
 const SSH_BASE_OPTS = [
   '-i', SSH_KEY,
   '-o', 'ConnectTimeout=5',
@@ -293,8 +293,9 @@ function collectStatus() {
 
   const remoteScript = [
     `pgrep -af '${procPat}' 2>/dev/null | grep -v pgrep | grep -v 'bash -c' || true`,
-    `LATEST=''; for f in $(ls -t ${LOG_DIR} 2>/dev/null); do pid=$(echo "$f" | sed -E 's/.*_([0-9]+)\\.log/\\1/'); if [ -d "/proc/$pid" ] 2>/dev/null; then LATEST="$f"; break; fi; done; echo "$LATEST"`,
-    `LATEST=''; for f in $(ls -t ${LOG_DIR} 2>/dev/null); do pid=$(echo "$f" | sed -E 's/.*_([0-9]+)\\.log/\\1/'); if [ -d "/proc/$pid" ] 2>/dev/null; then LATEST="$f"; break; fi; done; if [ -n "$LATEST" ]; then head -n 30 ${LOG_DIR}/$LATEST 2>/dev/null; echo ${SEP}; tail -n ${MAX_LOG_LINES} ${LOG_DIR}/$LATEST 2>/dev/null; fi`,
+    // Find latest log: prefer one with a live PID, fall back to most recent file
+    `LATEST=''; for f in $(ls -t ${LOG_DIR} 2>/dev/null); do pid=$(echo "$f" | sed -E 's/.*_([0-9]+)\\.log/\\1/'); if [ -d "/proc/$pid" ] 2>/dev/null; then LATEST="$f"; break; fi; done; if [ -z "$LATEST" ]; then LATEST=$(ls -t ${LOG_DIR} 2>/dev/null | head -1); fi; echo "$LATEST"`,
+    `LATEST=''; for f in $(ls -t ${LOG_DIR} 2>/dev/null); do pid=$(echo "$f" | sed -E 's/.*_([0-9]+)\\.log/\\1/'); if [ -d "/proc/$pid" ] 2>/dev/null; then LATEST="$f"; break; fi; done; if [ -z "$LATEST" ]; then LATEST=$(ls -t ${LOG_DIR} 2>/dev/null | head -1); fi; if [ -n "$LATEST" ]; then head -n 30 ${LOG_DIR}/$LATEST 2>/dev/null; echo ${SEP}; tail -n ${MAX_LOG_LINES} ${LOG_DIR}/$LATEST 2>/dev/null; fi`,
     `${repoResolve}; cd "$REPO" 2>/dev/null && git branch --show-current 2>/dev/null || echo unknown`,
     `${repoResolve}; cd "$REPO" 2>/dev/null && basename -s .git "$(git remote get-url origin 2>/dev/null)" 2>/dev/null || echo unknown`,
     `${repoResolve}; cd "$REPO" 2>/dev/null && git log --oneline -5 2>/dev/null || echo none`,
@@ -508,7 +509,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-  console.log(`Agent Monitor - http://localhost:${PORT}`);
+  console.log(`PulseMonitor - http://localhost:${PORT}`);
   console.log(`Theme: ${THEME.name} (${THEME.displayName})`);
   console.log(`Harness: ${HARNESS.displayName}`);
   console.log(`SSH target: ${SSH_HOST} (key: ${SSH_KEY})`);

@@ -109,7 +109,7 @@ interface StatusResponse {
 
 function MonitorLogo({ size = 28 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="Agent Monitor">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="PulseMonitor">
       <path d="M12 2 L12 6" />
       <path d="M12 18 L12 22" />
       <path d="M4.93 4.93 L7.76 7.76" />
@@ -492,7 +492,7 @@ export default function App() {
           <div className="logo">
             <div className="logo-icon"><ThemeLogo logo={theme?.logo || 'radar'} size={28} /></div>
             <div className="logo-text">
-              <div className="logo-title">{theme?.logoTitle || 'AGENT MONITOR'}</div>
+              <div className="logo-title">{theme?.logoTitle || 'PULSEMONITOR'}</div>
               <div className="logo-subtitle">{theme?.displayName || status.harnessDisplayName || status.harness}</div>
             </div>
           </div>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Agent Monitor - Todo extractor.
+"""PulseMonitor - Todo extractor.
 
 Deployed to the remote machine by the install script. Reads the agent
 session database and extracts the latest todo list.

@@ -1,10 +1,10 @@
 # Harness Development Guide
 
-Agent Monitor is designed to support multiple AI agent CLIs. This guide explains how to add support for a new harness.
+PulseMonitor is designed to support multiple AI agent CLIs. This guide explains how to add support for a new harness.
 
 ## What is a Harness?
 
-A harness is an AI agent CLI that runs on a remote machine. Agent Monitor reads its logs and session data to present a dashboard. Each harness has its own log format, session storage, and process detection method.
+A harness is an AI agent CLI that runs on a remote machine. PulseMonitor reads its logs and session data to present a dashboard. Each harness has its own log format, session storage, and process detection method.
 
 ## Harness Config Shape
 
@@ -17,8 +17,8 @@ const HARNESS_MYAGENT = {
   processPattern: 'myagent --model',  // pgrep pattern to find the running process
   logDir: '~/.local/share/myagent/logs',  // where logs are stored
   sessionDbPath: '~/.local/share/myagent/sessions.db',  // session database (if any)
-  todoScript: '/tmp/agent-monitor-todos.py',  // deployed helper script
-  detailsScript: '/tmp/agent-monitor-details.py',
+  todoScript: '/tmp/pulsemonitor-todos.py',  // deployed helper script
+  detailsScript: '/tmp/pulsemonitor-details.py',
 
   // Log line patterns for tool call detection
   toolPatterns: [
@@ -119,6 +119,6 @@ The install script (`scripts/install.sh`) deploys helper scripts to the remote v
 Alternatively, manually deploy:
 
 ```bash
-scp -i ~/.ssh/key scripts/remote-todos.py root@server:/tmp/agent-monitor-todos.py
-scp -i ~/.ssh/key scripts/remote-details.py root@server:/tmp/agent-monitor-details.py
+scp -i ~/.ssh/key scripts/remote-todos.py root@server:/tmp/pulsemonitor-todos.py
+scp -i ~/.ssh/key scripts/remote-details.py root@server:/tmp/pulsemonitor-details.py
 ```
