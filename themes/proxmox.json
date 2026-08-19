@@ -1,0 +1,12 @@
+{
+  "name": "proxmox",
+  "displayName": "Proxmox Monitor",
+  "accent": "#e8700f",
+  "accentLight": "#f59e0b",
+  "accentDim": "#c45e0a",
+  "accentGlow": "rgba(232, 112, 15, 0.12)",
+  "accentBorder": "rgba(232, 112, 15, 0.25)",
+  "shadowGlow": "0 0 24px rgba(232, 112, 15, 0.12)",
+  "logo": "proxmox",
+  "logoTitle": "PROXMOX"
+}

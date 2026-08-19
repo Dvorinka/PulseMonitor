@@ -32,6 +32,34 @@ const SSH_HOST = process.env.AGENT_MONITOR_SSH_HOST || 'localhost';
 const REMOTE_REPO = process.env.AGENT_MONITOR_REPO_PATH || null;
 const MAX_LOG_LINES = parseInt(process.env.AGENT_MONITOR_MAX_LOG_LINES || '300', 10);
 
+// ── Theme ───────────────────────────────────────────────────────────────────
+// Loads a theme preset from themes/<name>.json. The theme controls accent
+// colors, logo, and display name. Set AGENT_MONITOR_THEME to switch presets.
+// Custom themes can be placed in themes/ and selected by name.
+
+const THEME_NAME = process.env.AGENT_MONITOR_THEME || 'default';
+const THEMES_DIR = path.join(__dirname, 'themes');
+
+function loadTheme(name) {
+  const themePath = path.join(THEMES_DIR, `${name}.json`);
+  try {
+    const raw = fs.readFileSync(themePath, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    console.warn(`Theme "${name}" not found, falling back to default`);
+    if (name !== 'default') {
+      try {
+        return JSON.parse(fs.readFileSync(path.join(THEMES_DIR, 'default.json'), 'utf8'));
+      } catch {
+        return { name: 'default', displayName: 'Agent Monitor', accent: '#06b6d4', logo: 'radar', logoTitle: 'AGENT MONITOR' };
+      }
+    }
+    return { name: 'default', displayName: 'Agent Monitor', accent: '#06b6d4', logo: 'radar', logoTitle: 'AGENT MONITOR' };
+  }
+}
+
+const THEME = loadTheme(THEME_NAME);
+
 // ── Harness config ──────────────────────────────────────────────────────────
 // Defines how to find and parse logs for each supported agent harness.
 // Currently only Devin CLI is supported. To add a harness, add a config
@@ -367,7 +395,14 @@ const server = http.createServer((req, res) => {
 
   const url = new URL(req.url, `http://localhost:${PORT}`);
 
-  if (url.pathname === '/api/status') {
+  if (url.pathname === '/api/config') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      theme: THEME,
+      harness: HARNESS.name,
+      harnessDisplayName: HARNESS.displayName,
+    }));
+  } else if (url.pathname === '/api/status') {
     try {
       const status = collectStatus();
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -430,6 +465,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`Agent Monitor - http://localhost:${PORT}`);
+  console.log(`Theme: ${THEME.name} (${THEME.displayName})`);
   console.log(`Harness: ${HARNESS.displayName}`);
   console.log(`SSH target: ${SSH_HOST} (key: ${SSH_KEY})`);
   console.log(`Remote repo: ${REMOTE_REPO || 'auto-detect from agent process CWD'}`);

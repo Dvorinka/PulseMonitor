@@ -97,7 +97,42 @@ All configuration is via environment variables. Copy `.env.example` to `.env` an
 | `AGENT_MONITOR_PORT` | `5656` | Local port for the dashboard |
 | `AGENT_MONITOR_REPO_PATH` | auto-detect | Remote repo path (auto-detected from agent process CWD if not set) |
 | `AGENT_MONITOR_HARNESS` | `devin` | Agent harness to monitor |
+| `AGENT_MONITOR_THEME` | `default` | Theme preset (`default`, `proxmox`, or custom) |
 | `AGENT_MONITOR_MAX_LOG_LINES` | `300` | Max log lines to fetch per poll |
+
+## Themes
+
+Agent Monitor supports theme presets for customization. Themes control the accent color, logo, and display name.
+
+### Built-in Themes
+
+| Theme | Accent | Logo | Description |
+|-------|--------|------|-------------|
+| `default` | Cyan (#06b6d4) | Radar/scope | Clean, generic monitoring look |
+| `proxmox` | Orange (#e8700f) | Proxmox | Proxmox-branded monitoring |
+
+### Custom Themes
+
+Create a JSON file in `themes/` with any name:
+
+```json
+{
+  "name": "mytheme",
+  "displayName": "My Dashboard",
+  "accent": "#8b5cf6",
+  "accentLight": "#a78bfa",
+  "accentDim": "#7c3aed",
+  "accentGlow": "rgba(139, 92, 246, 0.12)",
+  "accentBorder": "rgba(139, 92, 246, 0.25)",
+  "shadowGlow": "0 0 24px rgba(139, 92, 246, 0.12)",
+  "logo": "radar",
+  "logoTitle": "MY MONITOR"
+}
+```
+
+Set `AGENT_MONITOR_THEME=mytheme` to activate it.
+
+The `logo` field accepts `"radar"` (default) or `"proxmox"`. To add a custom logo, extend the `ThemeLogo` component in `src/App.tsx`.
 
 ## Hook Script
 
