@@ -345,35 +345,8 @@ function ActivityBubble({ event }: { event: LogEvent }) {
   )
 }
 
-function TodoPanel() {
-  const [todos, setTodos] = useState<TodoItem[] | null>(null)
-  const [todoError, setTodoError] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    const fetchTodos = async () => {
-      try {
-        const res = await fetch('/api/todos')
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data: TodosResponse = await res.json()
-        if (cancelled) return
-        if (data.error) {
-          setTodoError(true)
-          setTodos(null)
-        } else {
-          setTodoError(false)
-          setTodos(data.todos ?? [])
-        }
-      } catch {
-        if (!cancelled) { setTodoError(true); setTodos(null) }
-      }
-    }
-    fetchTodos()
-    const interval = setInterval(fetchTodos, 5000)
-    return () => { cancelled = true; clearInterval(interval) }
-  }, [])
-
-  if (todoError || !todos || todos.length === 0) return null
+function TodoPanel({ todos }: { todos: TodoItem[] | null }) {
+  if (!todos || todos.length === 0) return null
 
   const done = todos.filter(t => t.status === 'completed').length
   const total = todos.length
@@ -399,24 +372,7 @@ function TodoPanel() {
   )
 }
 
-function ToolStatsPanel() {
-  const [details, setDetails] = useState<DetailsResponse | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    const fetchDetails = async () => {
-      try {
-        const res = await fetch('/api/details')
-        if (!res.ok) return
-        const data: DetailsResponse = await res.json()
-        if (!cancelled && !data.error) setDetails(data)
-      } catch { /* ignore */ }
-    }
-    fetchDetails()
-    const interval = setInterval(fetchDetails, 5000)
-    return () => { cancelled = true; clearInterval(interval) }
-  }, [])
-
+function ToolStatsPanel({ details }: { details: DetailsResponse | null }) {
   if (!details || !details.toolCalls) return null
   const tools = details.toolCalls
   const total = Object.values(tools).reduce((a, b) => a + b, 0)
@@ -443,24 +399,7 @@ function ToolStatsPanel() {
   )
 }
 
-function SystemPanel() {
-  const [details, setDetails] = useState<DetailsResponse | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    const fetchDetails = async () => {
-      try {
-        const res = await fetch('/api/details')
-        if (!res.ok) return
-        const data: DetailsResponse = await res.json()
-        if (!cancelled && !data.error) setDetails(data)
-      } catch { /* ignore */ }
-    }
-    fetchDetails()
-    const interval = setInterval(fetchDetails, 5000)
-    return () => { cancelled = true; clearInterval(interval) }
-  }, [])
-
+function SystemPanel({ details }: { details: DetailsResponse | null }) {
   if (!details || !details.system) return null
   const sys = details.system
   const memPct = sys.mem_total_kb && sys.mem_avail_kb
@@ -483,24 +422,7 @@ function SystemPanel() {
   )
 }
 
-function CommentaryPanel() {
-  const [details, setDetails] = useState<DetailsResponse | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    const fetchDetails = async () => {
-      try {
-        const res = await fetch('/api/details')
-        if (!res.ok) return
-        const data: DetailsResponse = await res.json()
-        if (!cancelled && !data.error) setDetails(data)
-      } catch { /* ignore */ }
-    }
-    fetchDetails()
-    const interval = setInterval(fetchDetails, 5000)
-    return () => { cancelled = true; clearInterval(interval) }
-  }, [])
-
+function CommentaryPanel({ details }: { details: DetailsResponse | null }) {
   if (!details || !details.commentary || details.commentary.length === 0) return null
 
   return (
@@ -518,17 +440,27 @@ function CommentaryPanel() {
 }
 
 // ── Main App ────────────────────────────────────────────────────────────────
+interface AllResponse {
+  status: StatusResponse
+  todos: TodosResponse
+  details: DetailsResponse
+}
+
 export default function App() {
   const [status, setStatus] = useState<StatusResponse | null>(null)
+  const [todos, setTodos] = useState<TodoItem[] | null>(null)
+  const [details, setDetails] = useState<DetailsResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const theme = useTheme()
 
   const poll = useCallback(async () => {
     try {
-      const res = await fetch('/api/status')
+      const res = await fetch('/api/all')
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      setStatus(data)
+      const data: AllResponse = await res.json()
+      setStatus(data.status)
+      setTodos(data.todos?.todos ?? null)
+      setDetails(data.details?.error ? null : data.details)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
@@ -583,11 +515,11 @@ export default function App() {
 
         <GitPanel git={status.git} />
 
-        <TodoPanel />
+        <TodoPanel todos={todos} />
 
-        <ToolStatsPanel />
+        <ToolStatsPanel details={details} />
 
-        <SystemPanel />
+        <SystemPanel details={details} />
 
         <div className="sidebar-footer">
           <div className="footer-label">REMOTE TARGET</div>
@@ -608,7 +540,7 @@ export default function App() {
           <span className="main-meta">{events.length} events</span>
         </div>
 
-        <CommentaryPanel />
+        <CommentaryPanel details={details} />
 
         <div className="feed">
           {events.length === 0 ? (

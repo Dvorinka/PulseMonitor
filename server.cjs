@@ -129,16 +129,44 @@ if (!HARNESS) {
 const LOG_DIR = HARNESS.logDir;
 
 // ── SSH helper ──────────────────────────────────────────────────────────────
+// Uses SSH ControlMaster for connection reuse. The first call opens a master
+// connection; subsequent calls reuse it, avoiding repeated key exchange.
+// The control socket is created in /tmp and auto-expires after 30s of idle.
+
+const SSH_CONTROL_PATH = `/tmp/agent-monitor-ssh-${process.pid}`;
+const SSH_BASE_OPTS = [
+  '-i', SSH_KEY,
+  '-o', 'ConnectTimeout=5',
+  '-o', 'StrictHostKeyChecking=no',
+  '-o', `ControlPath=${SSH_CONTROL_PATH}`,
+  '-o', 'ControlMaster=auto',
+  '-o', 'ControlPersist=30',
+];
+
+// Ensure the control socket dir exists
+try { fs.mkdirSync('/tmp', { recursive: true }); } catch {}
+
 function ssh(cmd) {
   const escaped = cmd.replace(/'/g, "'\\''");
+  const opts = SSH_BASE_OPTS.map(o => `"${o}"`).join(' ');
   try {
     return execSync(
-      `ssh -i "${SSH_KEY}" -o ConnectTimeout=5 -o StrictHostKeyChecking=no "${SSH_HOST}" '${escaped}'`,
-      { encoding: 'utf8', timeout: 20000, maxBuffer: 4 * 1024 * 1024 }
+      `ssh ${opts} "${SSH_HOST}" '${escaped}'`,
+      { encoding: 'utf8', timeout: 15000, maxBuffer: 4 * 1024 * 1024 }
     ).trim();
   } catch {
     return null;
   }
+}
+
+// Run multiple SSH commands in a single round-trip using a separator.
+// Returns an array of strings, one per command.
+function sshBatch(commands) {
+  const SEP = '__BATCH_SEP__';
+  const combined = commands.join(`; echo ${SEP}; `);
+  const raw = ssh(combined);
+  if (!raw) return commands.map(() => '');
+  return raw.split(SEP).map(s => s.trim());
 }
 
 // ── Log parser ──────────────────────────────────────────────────────────────
@@ -402,6 +430,22 @@ const server = http.createServer((req, res) => {
       harness: HARNESS.name,
       harnessDisplayName: HARNESS.displayName,
     }));
+  } else if (url.pathname === '/api/all') {
+    // Combined endpoint: fetches status + todos + details in parallel.
+    // Uses SSH ControlMaster so all three share one SSH connection.
+    // This is the primary endpoint the frontend polls.
+    try {
+      const [status, todos, details] = [
+        collectStatus(),
+        collectTodos(),
+        collectDetails(),
+      ];
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status, todos, details }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
   } else if (url.pathname === '/api/status') {
     try {
       const status = collectStatus();
