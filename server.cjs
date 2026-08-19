@@ -51,14 +51,40 @@ function loadTheme(name) {
       try {
         return JSON.parse(fs.readFileSync(path.join(THEMES_DIR, 'default.json'), 'utf8'));
       } catch {
-        return { name: 'default', displayName: 'PulseMonitor', accent: '#06b6d4', logo: 'radar', logoTitle: 'AGENT MONITOR' };
+        return { name: 'default', displayName: 'PulseMonitor', accent: '#06b6d4', logo: 'radar', logoTitle: 'PULSEMONITOR' };
       }
     }
-    return { name: 'default', displayName: 'PulseMonitor', accent: '#06b6d4', logo: 'radar', logoTitle: 'AGENT MONITOR' };
+    return { name: 'default', displayName: 'PulseMonitor', accent: '#06b6d4', logo: 'radar', logoTitle: 'PULSEMONITOR' };
   }
 }
 
-const THEME = loadTheme(THEME_NAME);
+// Load user overrides that persist changes made via the web UI.
+// Stored in themes/local-overrides.json, merged on top of the base theme.
+const OVERRIDES_PATH = path.join(THEMES_DIR, 'local-overrides.json');
+
+function loadOverrides() {
+  try {
+    return JSON.parse(fs.readFileSync(OVERRIDES_PATH, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function saveOverrides(overrides) {
+  fs.writeFileSync(OVERRIDES_PATH, JSON.stringify(overrides, null, 2), 'utf8');
+}
+
+function mergeTheme(base, overrides) {
+  return { ...base, ...overrides };
+}
+
+let activeOverrides = loadOverrides();
+let THEME = mergeTheme(loadTheme(THEME_NAME), activeOverrides);
+
+function reloadTheme() {
+  activeOverrides = loadOverrides();
+  THEME = mergeTheme(loadTheme(THEME_NAME), activeOverrides);
+}
 
 // ── Harness config ──────────────────────────────────────────────────────────
 // Defines how to find and parse logs for each supported agent harness.
@@ -431,6 +457,42 @@ const server = http.createServer((req, res) => {
       harness: HARNESS.name,
       harnessDisplayName: HARNESS.displayName,
     }));
+  } else if (url.pathname === '/api/theme' && req.method === 'POST') {
+    // Save theme overrides from the web UI settings panel.
+    // Accepts partial theme fields and merges them into the overrides file.
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; if (body.length > 4096) req.destroy(); });
+    req.on('end', () => {
+      try {
+        const updates = JSON.parse(body);
+        // Only allow known theme fields
+        const allowed = ['displayName', 'accent', 'accentLight', 'accentDim', 'accentGlow', 'accentBorder', 'shadowGlow', 'logo', 'logoTitle'];
+        const filtered = {};
+        for (const key of allowed) {
+          if (key in updates) filtered[key] = updates[key];
+        }
+        activeOverrides = { ...activeOverrides, ...filtered };
+        saveOverrides(activeOverrides);
+        THEME = mergeTheme(loadTheme(THEME_NAME), activeOverrides);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, theme: THEME }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+  } else if (url.pathname === '/api/theme/reset' && req.method === 'POST') {
+    // Reset theme overrides back to the preset defaults.
+    try {
+      activeOverrides = {};
+      saveOverrides({});
+      THEME = mergeTheme(loadTheme(THEME_NAME), {});
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, theme: THEME }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
   } else if (url.pathname === '/api/all') {
     // Combined endpoint: fetches status + todos + details in parallel.
     // Uses SSH ControlMaster so all three share one SSH connection.

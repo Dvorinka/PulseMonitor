@@ -439,6 +439,113 @@ function CommentaryPanel({ details }: { details: DetailsResponse | null }) {
   )
 }
 
+// ── Settings Panel ──────────────────────────────────────────────────────────
+function SettingsPanel({ theme, onClose }: { theme: ThemeConfig; onClose: () => void }) {
+  const [form, setForm] = useState<ThemeConfig>(theme)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const update = (field: keyof ThemeConfig, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }))
+    setSaved(false)
+  }
+
+  const applyLive = (field: keyof ThemeConfig, value: string) => {
+    update(field, value)
+    const root = document.documentElement
+    if (field === 'accent') root.style.setProperty('--accent', value)
+    if (field === 'accentLight') root.style.setProperty('--accent-light', value)
+    if (field === 'accentDim') root.style.setProperty('--accent-dim', value)
+    if (field === 'accentGlow') root.style.setProperty('--accent-glow', value)
+    if (field === 'accentBorder') root.style.setProperty('--accent-border', value)
+    if (field === 'shadowGlow') root.style.setProperty('--shadow-glow', value)
+  }
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      const res = await fetch('/api/theme', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (res.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    } catch { /* ignore */ }
+    setSaving(false)
+  }
+
+  const reset = async () => {
+    setSaving(true)
+    try {
+      const res = await fetch('/api/theme/reset', { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        setForm(data.theme)
+        const root = document.documentElement
+        root.style.setProperty('--accent', data.theme.accent)
+        if (data.theme.accentLight) root.style.setProperty('--accent-light', data.theme.accentLight)
+        if (data.theme.accentDim) root.style.setProperty('--accent-dim', data.theme.accentDim)
+        if (data.theme.accentGlow) root.style.setProperty('--accent-glow', data.theme.accentGlow)
+        if (data.theme.accentBorder) root.style.setProperty('--accent-border', data.theme.accentBorder)
+        if (data.theme.shadowGlow) root.style.setProperty('--shadow-glow', data.theme.shadowGlow)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    } catch { /* ignore */ }
+    setSaving(false)
+  }
+
+  return (
+    <div className="settings-overlay" onClick={onClose}>
+      <div className="settings-panel" onClick={e => e.stopPropagation()}>
+        <div className="settings-header">
+          <span className="settings-title">THEME SETTINGS</span>
+          <button className="settings-close" onClick={onClose}>x</button>
+        </div>
+        <div className="settings-body">
+          <label className="settings-field">
+            <span>Display Name</span>
+            <input type="text" value={form.displayName} onChange={e => update('displayName', e.target.value)} />
+          </label>
+          <label className="settings-field">
+            <span>Logo Title</span>
+            <input type="text" value={form.logoTitle} onChange={e => update('logoTitle', e.target.value)} />
+          </label>
+          <label className="settings-field">
+            <span>Logo</span>
+            <select value={form.logo} onChange={e => update('logo', e.target.value)}>
+              <option value="radar">Radar / Scope</option>
+              <option value="proxmox">Proxmox</option>
+            </select>
+          </label>
+          <label className="settings-field">
+            <span>Accent Color</span>
+            <input type="color" value={form.accent} onChange={e => applyLive('accent', e.target.value)} />
+            <input type="text" className="color-hex" value={form.accent} onChange={e => applyLive('accent', e.target.value)} />
+          </label>
+          <label className="settings-field">
+            <span>Accent Light</span>
+            <input type="color" value={form.accentLight || form.accent} onChange={e => applyLive('accentLight', e.target.value)} />
+          </label>
+          <label className="settings-field">
+            <span>Accent Dim</span>
+            <input type="color" value={form.accentDim || form.accent} onChange={e => applyLive('accentDim', e.target.value)} />
+          </label>
+        </div>
+        <div className="settings-footer">
+          <button className="settings-btn settings-reset" onClick={reset} disabled={saving}>Reset to Preset</button>
+          <button className="settings-btn settings-save" onClick={save} disabled={saving}>
+            {saving ? 'Saving...' : saved ? 'Saved!' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main App ────────────────────────────────────────────────────────────────
 interface AllResponse {
   status: StatusResponse
@@ -451,6 +558,7 @@ export default function App() {
   const [todos, setTodos] = useState<TodoItem[] | null>(null)
   const [details, setDetails] = useState<DetailsResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showSettings, setShowSettings] = useState(false)
   const theme = useTheme()
 
   const poll = useCallback(async () => {
@@ -468,9 +576,17 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    poll()
-    const interval = setInterval(poll, 4000)
-    return () => clearInterval(interval)
+    // Poll immediately, then every 8 seconds.
+    // The /api/all endpoint does 3 SSH calls which can take 3-10 seconds,
+    // so we use a longer interval than the fetch duration to avoid piling up.
+    let active = true
+    let timer: ReturnType<typeof setTimeout>
+    const loop = async () => {
+      if (active) await poll()
+      if (active) timer = setTimeout(loop, 8000)
+    }
+    loop()
+    return () => { active = false; clearTimeout(timer) }
   }, [poll])
 
   if (!status) {
@@ -495,6 +611,12 @@ export default function App() {
               <div className="logo-title">{theme?.logoTitle || 'PULSEMONITOR'}</div>
               <div className="logo-subtitle">{theme?.displayName || status.harnessDisplayName || status.harness}</div>
             </div>
+            <button className="settings-toggle" onClick={() => setShowSettings(true)} title="Theme settings" aria-label="Theme settings">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -555,6 +677,7 @@ export default function App() {
           )}
         </div>
       </main>
+      {showSettings && theme && <SettingsPanel theme={theme} onClose={() => setShowSettings(false)} />}
     </div>
   )
 }
