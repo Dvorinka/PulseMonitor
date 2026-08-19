@@ -366,9 +366,19 @@ function collectStatus() {
 
   const parsed = parseLog(logContent);
 
+  // If the process is gone but no shutdown event was captured in the log
+  // (kill, crash, log truncation), synthesize endTime from the last log
+  // event timestamp so the duration card freezes instead of counting to now.
+  let endTime = parsed.endTime;
+  if (!isRunning && parsed.startTime && !endTime) {
+    endTime = parsed.events.length > 0
+      ? parsed.events[parsed.events.length - 1].timestamp
+      : parsed.startTime;
+  }
+
   let status = 'idle';
   if (isRunning && parsed.startTime) status = 'running';
-  else if (!isRunning && parsed.endTime) status = 'stopped';
+  else if (!isRunning && parsed.startTime) status = 'stopped';
   else if (!isRunning && !parsed.startTime) status = 'connecting';
 
   let model = parsed.model;
@@ -391,7 +401,7 @@ function collectStatus() {
     version: parsed.version,
     sessionName: parsed.sessionName,
     startTime: parsed.startTime,
-    endTime: parsed.endTime,
+    endTime,
     promptFile,
     logFileName: latestLog,
     host: SSH_HOST,
